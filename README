@@ -1,0 +1,41 @@
+#############################
+# ABOUT                     #
+#############################
+This is the block sign tool. Version 1.0
+
+#############################
+# PREREQUISITES             #
+#############################
+  - libxml2-dev
+  - openssl-dev (built against 1.1.1)
+  
+#############################
+# INSTALL                   #
+#############################
+  - make
+  - make install
+  
+#############################
+# NOTES                     #
+#############################
+External signing
+  If doing external signing (i.e. <script>),
+  the tool will generate two files:
+    data.raw - The raw data
+    data.hsh - The hash of data
+  After generating these files, the tool will call
+  the script, and expect a DER encoded siganture in
+  the file data.sig.
+
+  sig->r and sig->s to be
+  concatenated into one binary file. Total file length
+  should be 64 (256 curve) or 96 (384 curve).
+  
+
+#############################
+# EXAMPLES                  #
+#############################
+To create a block signed binary:
+  blocksign -o out.bin -c config.xml in.bin -v
+To parse a block signed binary:
+  blocksign -p out.bin -c config.xml
