@@ -3,7 +3,7 @@
 #include <stdint.h>
 #define EXPECT_VERSION 1
 
-#define CANCELLATION_BIT 0x80
+#define CANCELLATION_BIT 0x100
 #define EC_POINT_MAX 48
 #define EC_POINT_384 48
 #define EC_POINT_256 32
@@ -41,20 +41,25 @@
 #define ELEMENT_PADDING "PADDING"
 #define ELEMENT_BLOCKPAD "BLOCKPAD"
 #define ELEMENT_ALIGN "ALIGN"
+#define ELEMENT_CPLD "CPLD"
+#define ELEMENT_BYTESWAP "SWAPBYTES"
+#define ELEMENT_CPLDSVN "SVN"
 
 // True False Tags
 #define TAG_TRUE "TRUE"
 #define TAG_FALSE "FALSE"
 
-typedef struct B1_RK {
+typedef struct _B1_RK
+{
     uint32_t magic;
     uint32_t curve_magic;
     char *pubkey;
     int32_t permissions;
     int32_t keyid;
-} _B1_RK;
+} B1_RK;
 
-typedef struct B1_CSK {
+typedef struct _B1_CSK
+{
     uint32_t magic;
     uint32_t curve_magic;
     char *script_file;
@@ -64,38 +69,43 @@ typedef struct B1_CSK {
     uint32_t sig_magic;
     int32_t permissions;
     int32_t keyid;
-} _B1_CSK;
+} B1_CSK;
 
-typedef struct B0_SIG {
+typedef struct _B0_SIG
+{
     uint32_t magic;
     uint32_t sig_magic;
     uint16_t hashalg;
-    char *script_file;        // script to call for external
+    char *script_file; // script to call for external
     char *sign_key;
-} _B0_SIG;
+} B0_SIG;
 
-typedef struct B1_ARGUMENTS {
+typedef struct _B1_ARGUMENTS
+{
     uint32_t magic;
-    struct B1_RK root_key;
-    struct B1_CSK cskey;
-    struct B0_SIG b0sig;
-} _B1_ARGUMENTS;
+    B1_RK root_key;
+    B1_CSK cskey;
+    B0_SIG b0sig;
+} B1_ARGUMENTS;
 
-typedef struct B0_ARGUMENTS {
+typedef struct _B0_ARGUMENTS
+{
     uint32_t magic;
     uint32_t pctype;
-} _B0_ARGUMENTS;
+} B0_ARGUMENTS;
 
-typedef struct ARGUMENTS
+typedef struct _ARGUMENTS
 {
-	uint8_t version;
+    uint8_t swapbytes;
+    uint32_t svn;
+    uint8_t version;
     uint8_t verbose;
     uint8_t parse;
     uint32_t align;
     uint32_t blockpad;
     char *inputBinary;
     char *outputBinary;
-    struct B0_ARGUMENTS b0_args;
-    struct B1_ARGUMENTS b1_args;
-} _ARGUMENTS;
+    B0_ARGUMENTS b0_args;
+    B1_ARGUMENTS b1_args;
+} ARGUMENTS;
 #endif

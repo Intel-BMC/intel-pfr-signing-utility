@@ -10,10 +10,7 @@ RM=rm -f
 CP=cp --no-dereference
 LIBS=-lcrypto -lxml2
 APPNAME=blocksign
-APP_OBJS=argparse.o blocksign.o sslhelper.o main.o s_helpers.o log.o
-#LIBSSLHELPER_DIR=../libsslhelper/
-#ADDL_LIB_DIRS=-L$(LIBSSLHELPER_DIR)
-#ADDL_INC_DIRS=-I$(LIBSSLHELPER_DIR)
+APP_OBJS=argparse.o blocksign.o sslhelper.o main.o s_helpers.o log.o cpld.o
 INSTALL_PATH=/usr/local/bin/
 
 all:$(APPNAME)
@@ -38,6 +35,9 @@ s_helpers.o:s_helpers.c
 
 log.o:log.c
 	$(CC) $(CFLAGS) log.c
+
+cpld.o:cpld.c
+	$(CC) $(CFLAGS) cpld.c
 
 clean:
 	$(RM) *.o $(APPNAME)

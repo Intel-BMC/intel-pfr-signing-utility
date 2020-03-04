@@ -1,17 +1,21 @@
 #include "sslhelper.h"
-#include "log.h"
-#include "s_helpers.h"
-#include <openssl/ossl_typ.h>
-#include <openssl/crypto.h>
-#include <openssl/pem.h>
-#include <openssl/evp.h>
-#include <openssl/ec.h>
-#include <stdio.h>
+
 #include <limits.h>
+#include <openssl/crypto.h>
+#include <openssl/ec.h>
+#include <openssl/evp.h>
+#include <openssl/ossl_typ.h>
+#include <openssl/pem.h>
+#include <stdio.h>
 #include <string.h>
 
-/// Extract R and S values from signature, stripping off 0x00 MSB if it exists, resulting in fixed sizes for R and S
-int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r, unsigned char **s, int *len)
+#include "log.h"
+#include "s_helpers.h"
+
+/// Extract R and S values from signature, stripping off 0x00 MSB if it exists,
+/// resulting in fixed sizes for R and S
+int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r,
+              unsigned char **s, int *len)
 {
     int ret = 1;
     int i, j;
@@ -21,7 +25,8 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r, uns
     if (sigLen < 70 || sig == NULL)
     {
         // invalid sig length
-        fprintf(stderr, "%sSignature length is too short to be correct.\n", getErr());
+        fprintf(stderr, "%sSignature length is too short to be correct.\n",
+                getErr());
         ret = 0;
     }
     // figure out point length and if we need to skip a byte
@@ -33,7 +38,7 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r, uns
             {
                 skipR = 0x01;
             }
-            if (sig[3 + sig[3]+2] == 0x21)
+            if (sig[3 + sig[3] + 2] == 0x21)
             {
                 skipS = 0x01;
             }
@@ -45,7 +50,7 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r, uns
             {
                 skipR = 0x01;
             }
-            if (sig[3 + sig[3]] == 0x31)
+            if (sig[3 + sig[3] + 2] == 0x31)
             {
                 skipS = 0x01;
             }
@@ -73,7 +78,15 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r, uns
     // make sure we can do math correctly
     if (((*len) * 2) + skipR + skipS + 6 != sigLen)
     {
-        fprintf(stderr, "%sDecoded length from DER does not equal signature length.\n", getErr());
+        fprintf(stderr,
+                "%sDecoded length from DER does not equal signature length.\n",
+                getErr());
+        fprintf(stderr, "%ssigLen = %d\n", getErr(), sigLen);
+        fprintf(stderr, "%slen = %d\n", getErr(), *len);
+        fprintf(stderr, "%sskipR = %d\n", getErr(), skipR);
+        fprintf(stderr, "%sskipS = %d\n", getErr(), skipS);
+        fprintf(stderr, "%sDER Encoded Signature:\n", getErr());
+        hexDump(sig, sigLen, "  ", stderr, getErr());
         ret = 0;
     }
     else
@@ -84,7 +97,7 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r, uns
             (*r)[j] = sig[i];
         }
         *s = malloc(*len * sizeof(unsigned char));
-        for (i+=2 + skipS,j = 0; j < *len && i < sigLen; ++i, ++j)
+        for (i += 2 + skipS, j = 0; j < *len && i < sigLen; ++i, ++j)
         {
             (*s)[j] = sig[i];
         }
@@ -93,7 +106,8 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r, uns
 }
 
 /// Re-encodes R/S coordinates with stripped 0x00
-int DerEncodeRs(const unsigned char *r, const unsigned char *s, const int pointLen, unsigned char **sig, int *sigLen)
+int DerEncodeRs(const unsigned char *r, const unsigned char *s,
+                const int pointLen, unsigned char **sig, int *sigLen)
 {
     int ret = 1;
     int i = 0;
@@ -105,7 +119,7 @@ int DerEncodeRs(const unsigned char *r, const unsigned char *s, const int pointL
         fprintf(stderr, "%sR, S or sig is NULL\n", getErr());
         ret = 0;
     }
-    if(ret)
+    if (ret)
     {
         // if most significant bit is 1, pad 0x00
         if (r[0] & 0x80)
@@ -145,10 +159,11 @@ int DerEncodeRs(const unsigned char *r, const unsigned char *s, const int pointL
     return ret;
 }
 
-int ExtractQxQyFromPubkey(const char *file, unsigned char **qx, unsigned char **qy, int *len)
+int ExtractQxQyFromPubkey(const char *file, unsigned char **qx,
+                          unsigned char **qy, int *len)
 {
     int ret = 1;
-    int i,j;
+    int i, j;
     unsigned char *pub;
     int publen;
     EC_KEY *eckey = NULL;
@@ -177,11 +192,15 @@ int ExtractQxQyFromPubkey(const char *file, unsigned char **qx, unsigned char **
         }
         if (ret)
         {
-            publen = EC_KEY_key2buf(eckey, EC_KEY_get_conv_form(eckey), &pub, NULL);
+            publen =
+                EC_KEY_key2buf(eckey, EC_KEY_get_conv_form(eckey), &pub, NULL);
             if (pub[0] != 0x04)
             {
                 // key is compressed, we don't support this
-                fprintf(stderr, "%sKey is in compressed format. This is currently not supported.\n", getErr());
+                fprintf(stderr,
+                        "%sKey is in compressed format. This is currently not "
+                        "supported.\n",
+                        getErr());
                 ret = 0;
             }
             *len = (publen - 1) / 2;
@@ -201,7 +220,8 @@ int ExtractQxQyFromPubkey(const char *file, unsigned char **qx, unsigned char **
     return ret;
 }
 
-int HashBuffer(const uint8_t *buffer, const int bufSize, const HashAlg hashAlg, unsigned char **hash, int *size)
+int HashBuffer(const uint8_t *buffer, const int bufSize, const HashAlg hashAlg,
+               unsigned char **hash, int *size)
 {
     int ret = 1;
     EVP_MD_CTX *mctx = NULL;
@@ -233,10 +253,11 @@ int HashBuffer(const uint8_t *buffer, const int bufSize, const HashAlg hashAlg, 
         *hash = (unsigned char *)malloc(*size);
         mctx = EVP_MD_CTX_new();
         EVP_DigestInit_ex(mctx, md, NULL);
-        
+
         ret = EVP_DigestUpdate(mctx, buffer, bufSize);
         // Final frees mctx memory
-        if (ret != 0 && EVP_DigestFinal_ex(mctx, *hash, (unsigned int *)size) <= 0)
+        if (ret != 0 &&
+            EVP_DigestFinal_ex(mctx, *hash, (unsigned int *)size) <= 0)
         {
             fprintf(stderr, "%sFailed to generate hash.\n", getErr());
             ret = 0;
@@ -248,7 +269,8 @@ int HashBuffer(const uint8_t *buffer, const int bufSize, const HashAlg hashAlg, 
     return ret;
 }
 
-int HashFilePointer(FILE* fp, const HashAlg hashAlg, unsigned char **hash, int *size)
+int HashFilePointer(FILE *fp, const HashAlg hashAlg, unsigned char **hash,
+                    int *size)
 {
     int ret = 1;
     EVP_MD_CTX *mctx = NULL;
@@ -300,7 +322,8 @@ int HashFilePointer(FILE* fp, const HashAlg hashAlg, unsigned char **hash, int *
         }
 
         // Final frees mctx memory
-        if (ret != 0 && EVP_DigestFinal_ex(mctx, *hash, (unsigned int *)size) <= 0)
+        if (ret != 0 &&
+            EVP_DigestFinal_ex(mctx, *hash, (unsigned int *)size) <= 0)
         {
             fprintf(stderr, "%sFailed to generate hash.\n", getErr());
             ret = 0;
@@ -311,7 +334,8 @@ int HashFilePointer(FILE* fp, const HashAlg hashAlg, unsigned char **hash, int *
     return ret;
 }
 
-int HashFile(const char* file, const HashAlg hashAlg, unsigned char **hash, int *size)
+int HashFile(const char *file, const HashAlg hashAlg, unsigned char **hash,
+             int *size)
 {
     int ret = 1;
     EVP_MD_CTX *mctx = NULL;
@@ -378,7 +402,8 @@ int HashFile(const char* file, const HashAlg hashAlg, unsigned char **hash, int 
         }
 
         // Final frees mctx memory
-        if (ret != 0 && EVP_DigestFinal_ex(mctx, *hash, (unsigned int *)size) <= 0)
+        if (ret != 0 &&
+            EVP_DigestFinal_ex(mctx, *hash, (unsigned int *)size) <= 0)
         {
             fprintf(stderr, "%sFailed to generate hash.\n", getErr());
             ret = 0;
@@ -390,19 +415,22 @@ int HashFile(const char* file, const HashAlg hashAlg, unsigned char **hash, int 
     return ret;
 }
 
-int SignData(const char *certFile, const SigAlg sigAlg, const unsigned char *data, const HashAlg hashAlg, unsigned char **sig, int *sigSize) //, Logging *log=NULL)
+int SignData(const char *certFile, const SigAlg sigAlg,
+             const unsigned char *data, const HashAlg hashAlg,
+             unsigned char **sig, int *sigSize) //, Logging *log=NULL)
 {
-    int             ret = 1;        // Holds return values
-    BIO             *pkeyBio = NULL;  // For reading in private key
-    EVP_PKEY        *pkey=NULL;     // Private key EVP
-    EVP_PKEY_CTX    *pctx = NULL;   // Private key EVP context
-    const EVP_MD    *md = NULL;     // Hash alg context must be specified for signing
-    size_t          mdLen = 0;      // Length of message digest
-    size_t          siglen;         // Length of signature
+    int ret = 1;               // Holds return values
+    BIO *pkeyBio = NULL;       // For reading in private key
+    EVP_PKEY *pkey = NULL;     // Private key EVP
+    EVP_PKEY_CTX *pctx = NULL; // Private key EVP context
+    const EVP_MD *md = NULL;   // Hash alg context must be specified for signing
+    size_t mdLen = 0;          // Length of message digest
+    size_t siglen;             // Length of signature
 
     if (certFile == NULL || data == NULL || sig == NULL || sigSize == NULL)
     {
-        fprintf(stderr, "%sCert file, data, sig, or sig size is NULL.\n", getErr());
+        fprintf(stderr, "%sCert file, data, sig, or sig size is NULL.\n",
+                getErr());
         ret = 0;
     }
     if (ret != 0)
@@ -411,16 +439,18 @@ int SignData(const char *certFile, const SigAlg sigAlg, const unsigned char *dat
         pkeyBio = BIO_new_file(certFile, "r");
         if (!pkeyBio)
         {
-            fprintf(stderr, "%sFailed to read in certificate file %s.\n", getErr(), certFile);
+            fprintf(stderr, "%sFailed to read in certificate file %s.\n",
+                    getErr(), certFile);
             ret = 0;
         }
         if (ret)
-        {            
+        {
             pkey = PEM_read_bio_PrivateKey(pkeyBio, NULL, NULL, NULL);
         }
         if (!pkey && ret)
         {
-            fprintf(stderr, "%sFailed to read in certificate file %s.\n", getErr(), certFile);
+            fprintf(stderr, "%sFailed to read in certificate file %s.\n",
+                    getErr(), certFile);
             ret = 0;
         }
 
@@ -447,7 +477,8 @@ int SignData(const char *certFile, const SigAlg sigAlg, const unsigned char *dat
             pctx = EVP_PKEY_CTX_new(pkey, NULL);
             if (!pctx)
             {
-                fprintf(stderr, "%sFailed to generate PKEY context.\n", getErr());
+                fprintf(stderr, "%sFailed to generate PKEY context.\n",
+                        getErr());
                 ret = 0;
             }
             if (ret != 0 && EVP_PKEY_sign_init(pctx) <= 0)
@@ -461,13 +492,15 @@ int SignData(const char *certFile, const SigAlg sigAlg, const unsigned char *dat
             {
                 if (EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PADDING) <= 0)
                 {
-                    fprintf(stderr, "%sFailed to set PKCS padding.\n", getErr());
+                    fprintf(stderr, "%sFailed to set PKCS padding.\n",
+                            getErr());
                     ret = 0;
                 }
             }
             else if (ret != 0 && sigAlg == RsaPss)
             {
-                if (EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING) <= 0)
+                if (EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING) <=
+                    0)
                 {
                     fprintf(stderr, "%sFailed to set PSS padding.\n", getErr());
                     ret = 0;
@@ -477,14 +510,18 @@ int SignData(const char *certFile, const SigAlg sigAlg, const unsigned char *dat
             // Set the message digest type for PKEY context
             if (ret != 0 && EVP_PKEY_CTX_set_signature_md(pctx, md) <= 0)
             {
-                fprintf(stderr, "%sFailed to set the message digest.\n", getErr());
+                fprintf(stderr, "%sFailed to set the message digest.\n",
+                        getErr());
                 ret = 0;
             }
 
-            // If sig is NULL, max sig length is returned for length (malloc calculation)
-            if (ret != 0 && EVP_PKEY_sign(pctx, NULL, &siglen, data, mdLen) <= 0)
+            // If sig is NULL, max sig length is returned for length (malloc
+            // calculation)
+            if (ret != 0 &&
+                EVP_PKEY_sign(pctx, NULL, &siglen, data, mdLen) <= 0)
             {
-                fprintf(stderr, "%sFailed to calculate signature length.\n", getErr());
+                fprintf(stderr, "%sFailed to calculate signature length.\n",
+                        getErr());
                 ret = 0;
             }
 
@@ -500,9 +537,12 @@ int SignData(const char *certFile, const SigAlg sigAlg, const unsigned char *dat
             }
 
             // Perform signing
-            if (ret != 0 && EVP_PKEY_sign(pctx, *sig, &siglen, data, mdLen) <= 0)
+            if (ret != 0 &&
+                EVP_PKEY_sign(pctx, *sig, &siglen, data, mdLen) <= 0)
             {
-                fprintf(stderr, "%sFailed to perform signing operation with key %s.\n", getErr(), certFile);
+                fprintf(stderr,
+                        "%sFailed to perform signing operation with key %s.\n",
+                        getErr(), certFile);
                 ret = 0;
             }
 
@@ -531,20 +571,24 @@ int SignData(const char *certFile, const SigAlg sigAlg, const unsigned char *dat
     return ret;
 }
 
-int VerifyData(const char *certFile, const SigAlg sigAlg, const unsigned char *data, const HashAlg hashAlg, const unsigned char *sig, const int sigSize, int *verified) //, Logging *log=NULL)
+int VerifyData(const char *certFile, const SigAlg sigAlg,
+               const unsigned char *data, const HashAlg hashAlg,
+               const unsigned char *sig, const int sigSize,
+               int *verified) //, Logging *log=NULL)
 {
-    int             ret = 1;        // Holds the return value
-    BIO             *pkeyBio=NULL;  // For reading in private key
-    EVP_PKEY        *pkey=NULL;     // Private key EVP
-    EVP_PKEY_CTX    *pctx = NULL;   // Private key EVP context
-    const EVP_MD    *md = NULL;     // Hash alg context must be specified for signing
-    size_t          mdLen = 0;      // Length of message digest
-    size_t          siglen;         // Length of signature
-        
+    int ret = 1;               // Holds the return value
+    BIO *pkeyBio = NULL;       // For reading in private key
+    EVP_PKEY *pkey = NULL;     // Private key EVP
+    EVP_PKEY_CTX *pctx = NULL; // Private key EVP context
+    const EVP_MD *md = NULL;   // Hash alg context must be specified for signing
+    size_t mdLen = 0;          // Length of message digest
+    size_t siglen;             // Length of signature
+
     // null check
     if (certFile == NULL || data == NULL || sig == NULL || verified == NULL)
     {
-        fprintf(stderr, "%sCert file, data, sig, or verified flag is NULL.\n", getErr());
+        fprintf(stderr, "%sCert file, data, sig, or verified flag is NULL.\n",
+                getErr());
         ret = 0;
     }
 
@@ -555,7 +599,8 @@ int VerifyData(const char *certFile, const SigAlg sigAlg, const unsigned char *d
         pkeyBio = BIO_new_file(certFile, "r");
         if (pkeyBio == NULL)
         {
-            fprintf(stderr, "%sFailed to read in key %s.\n", getErr(), certFile);
+            fprintf(stderr, "%sFailed to read in key %s.\n", getErr(),
+                    certFile);
             ret = 0;
         }
         if (ret)
@@ -568,7 +613,8 @@ int VerifyData(const char *certFile, const SigAlg sigAlg, const unsigned char *d
             pkey = PEM_read_bio_PrivateKey(pkeyBio, NULL, NULL, NULL);
             if (!pkey)
             {
-                fprintf(stderr, "%sFailed to read in key %s.\n", getErr(), certFile);
+                fprintf(stderr, "%sFailed to read in key %s.\n", getErr(),
+                        certFile);
                 ret = 0;
             }
         }
@@ -594,12 +640,14 @@ int VerifyData(const char *certFile, const SigAlg sigAlg, const unsigned char *d
         pctx = EVP_PKEY_CTX_new(pkey, NULL);
         if (ret != 0 && !pctx)
         {
-            fprintf(stderr, "%sFailed to read create PKEY context.\n", getErr());
+            fprintf(stderr, "%sFailed to read create PKEY context.\n",
+                    getErr());
             ret = 0;
         }
         if (ret != 0 && EVP_PKEY_verify_init(pctx) <= 0)
         {
-            fprintf(stderr, "%sFailed to initialize verification engine.\n", getErr());
+            fprintf(stderr, "%sFailed to initialize verification engine.\n",
+                    getErr());
             ret = 0;
         }
 
@@ -631,7 +679,7 @@ int VerifyData(const char *certFile, const SigAlg sigAlg, const unsigned char *d
         siglen = (size_t)sigSize;
         if (ret != 0)
         {
-            *verified = EVP_PKEY_verify(pctx, sig, siglen, data, mdLen);            
+            *verified = EVP_PKEY_verify(pctx, sig, siglen, data, mdLen);
         }
 
         if (pctx != NULL)

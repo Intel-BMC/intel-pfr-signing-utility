@@ -1,9 +1,11 @@
+#ifndef TESTS
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include "argparse.h"
 #include "blocksign.h"
 #include "log.h"
-#include <string.h>
 #ifdef _WIN32
 #include <crtdbg.h>
 #endif
@@ -49,13 +51,13 @@ int appMain(int argc, char **argv)
 {
     setAnsi();
     int ret = 1;
-    struct ARGUMENTS *args = NULL;
+    ARGUMENTS *args = NULL;
     initContext(&args);
     ret = parseCli(argc, argv, args);
     if (ret)
     {
         ret = doBlocksign(args);
-        if(!ret)
+        if (!ret)
         {
             fprintf(stderr, "%sBlocksign operation failed\n", getErr());
         }
@@ -66,3 +68,4 @@ int appMain(int argc, char **argv)
     }
     return !ret;
 }
+#endif

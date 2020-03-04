@@ -1,7 +1,8 @@
 #include "s_helpers.h"
-#include <string.h>
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 void copy_string(void *dest, int len, const void *src)
 {
 #ifdef _WIN32
@@ -14,14 +15,14 @@ void copy_string(void *dest, int len, const void *src)
 void copy_n_string(void *dest, int len, const void *src, int count)
 {
 #ifdef _WIN32
-    strncpy_s(dest, len, src, count);    
+    strncpy_s(dest, len, src, count);
 #else
     strncpy(dest, src, count);
 #endif
 }
 
-
-void copy_memory(void *const dest, const int destSize, const void *const src, const int srcSize)
+void copy_memory(void *const dest, const int destSize, const void *const src,
+                 const int srcSize)
 {
 #ifdef _WIN32
     memcpy_s(dest, destSize, src, srcSize);
@@ -70,8 +71,8 @@ void toUpper(const unsigned char *in, char **out)
     if (in != NULL)
     {
         int i;
-        *out = malloc(sizeof(char)*strlen((char*)in) + 1);
-        int length = strlen((char*)in);
+        *out = malloc(sizeof(char) * strlen((char *)in) + 1);
+        int length = strlen((char *)in);
         for (i = 0; i < length; ++i)
         {
             if (in[i] >= 'a' && in[i] <= 'z')
