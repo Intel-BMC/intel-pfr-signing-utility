@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-#ifndef _BLOCKSIGN_H_
-#define _BLOCKSIGN_H_
+#pragma once
 #include "args.h"
 #include "blocks.h"
 #define PAD_CPLD 0xff
@@ -26,27 +25,30 @@
 #define FILE_DATA_RAW "data.raw"
 #define FILE_SIG_EXPECT "data.sig"
 #define CMD_PREFIX "cmd \0"
-// TEST BLOCK
+
 #ifdef _WIN32
 #ifdef TESTS
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-#ifdef BLOCKSIGN_EXPORTS
-#define BLOCKSIGN_API __declspec(dllexport)
+
+#ifdef INTEL_PFR_SIGNING_UTILITY_EXPORTS
+#define INTEL_PFR_SIGNING_UTILITY_API __declspec(dllexport)
 #else
-#define BLOCKSIGN_API __declspec(dllimport)
-#endif
-#else
-#define BLOCKSIGN_API
-#endif
-#else
-#define BLOCKSIGN_API
-#endif
-// END TEST BLOCK
-BLOCKSIGN_API int doBlocksign(ARGUMENTS *args);
-// TEST BLOCK
-#endif
+#define INTEL_PFR_SIGNING_UTILITY_API __declspec(dllimport)
+#endif	// INTEL_PFR_SIGNING_UTILITY_EXPORTS
+
+#else  // !TESTS
+#define INTEL_PFR_SIGNING_UTILITY_API
+#endif	// TESTS
+
+#else  // !_WIN32
+#define INTEL_PFR_SIGNING_UTILITY_API
+#endif	// _WIN32
+
+INTEL_PFR_SIGNING_UTILITY_API int doBlocksign(ARGUMENTS *args);
+
 #ifdef _WIN32
 #ifdef TESTS
 #ifdef __cplusplus
@@ -54,4 +56,3 @@ BLOCKSIGN_API int doBlocksign(ARGUMENTS *args);
 #endif
 #endif
 #endif
-// END TEST BLOCK

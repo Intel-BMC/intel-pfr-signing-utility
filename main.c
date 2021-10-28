@@ -74,7 +74,7 @@ int appMain(int argc, char **argv)
         ret = doBlocksign(args);
         if (!ret)
         {
-            fprintf(stderr, "%sBlocksign operation failed\n", getErr());
+            fprintf(stderr, "%s - sign operation failed\n", getErr());
         }
     }
     if (args != NULL)

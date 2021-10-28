@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-#ifndef _ARGS_H_
-#define _ARGS_H_
+#pragma once
 #include <stdint.h>
 #define EXPECT_VERSION 1
 
@@ -123,4 +122,3 @@ typedef struct _ARGUMENTS
     B0_ARGUMENTS b0_args;
     B1_ARGUMENTS b1_args;
 } ARGUMENTS;
-#endif

@@ -1598,10 +1598,10 @@ int parseArgs(const char *xmlFile, ARGUMENTS *args)
 /// Prints the usage information
 void printUsage()
 {
-    printf("%sExample build: blocksign -c config.xml -o output.bin input.bin "
+    printf("%sExample build: intel-pfr-signing-utility -c config.xml -o output.bin input.bin "
            "[-v]\n",
            getNfo());
-    printf("%sExample parse: blocksign -p output.bin [-c config.xml]\n",
+    printf("%sExample parse: intel-pfr-signing-utility -p output.bin [-c config.xml]\n",
            getNfo());
 }
 int setParse = 0;

@@ -1,7 +1,8 @@
 #############################
 # ABOUT                     #
 #############################
-This is the block sign tool. Version 1.0
+This is the Intel(R) Platform Firmware Resilience Signing Utility
+Version 1.0
 
 #############################
 # PREREQUISITES             #
@@ -35,7 +36,7 @@ External signing
 #############################
 # EXAMPLES                  #
 #############################
-To create a block signed binary:
-  blocksign -o out.bin -c config.xml in.bin -v
+To create a Intel(R) PFR signed binary:
+  intel-pfr-signing-utility -o out.bin -c config.xml in.bin -v
 To parse a block signed binary:
-  blocksign -p out.bin -c config.xml
+  intel-pfr-signing-utility -p out.bin -c config.xml

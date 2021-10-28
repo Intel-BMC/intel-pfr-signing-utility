@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-#ifndef _TCG_H_
-#define _TCG_H_
+#pragma once
 
 #define TPM_ALG_ERROR 0x0000
 #define TPM_ALG_RSA 0x0001
@@ -107,5 +106,3 @@
         0x30, 0x30, 0x30, 0x0c, 0x06, 0x08, 0x2A, 0x81, 0x1C, 0x81, 0x45,      \
             0x01, 0x83, 0x11, 0x05, 0x00, 0x04, 0x20                           \
     }
-
-#endif

@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-#ifndef _LOG_H_
-#define _LOG_H_
+#pragma once
 #include <stdio.h>
+
 // ANSI Compatible terminals
 #define TERM_XTERM_256 "XTERM-256COLOR"
 #define TERM_LINUX "LINUX"
@@ -63,4 +63,3 @@ const char *getErr();
 const char *setAttribute(enum Attribute attr);
 void hexDump(const unsigned char *buf, const int len, const char *pad, FILE *fd,
              const char *tag);
-#endif

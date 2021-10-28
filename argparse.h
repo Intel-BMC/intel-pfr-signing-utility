@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-#ifndef _ARGPARSE_H_
-#define _ARGPRASE_H_
+#pragma once
 #include "args.h"
 // Returns performs input validation and populates structs necessary for
 // building blocks. TEST BLOCK
@@ -39,7 +38,6 @@ BLOCKSIGN_API int parseCli(int argc, char **argv, ARGUMENTS *args);
 BLOCKSIGN_API void initContext(ARGUMENTS **args);
 BLOCKSIGN_API void destroyContext(ARGUMENTS *args);
 // TEST BLOCK
-#endif
 #ifdef _WIN32
 #ifdef TESTS
 #ifdef __cplusplus

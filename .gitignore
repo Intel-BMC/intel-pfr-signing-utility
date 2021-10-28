@@ -1,0 +1,7 @@
+intel-pfr-signing-utility
+*.o
+*.patch
+*~
+*.a
+.*.sw*
+build/

@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-#ifndef _BLOCKS_H_
-#define _BLOCKS_H_
+#pragma once
 #include <stdint.h>
 
 typedef struct _CSK
@@ -69,5 +68,3 @@ typedef struct _BLOCK_1
     CSK cs_key;
     BLOCK0_SIG block0_sig;
 } BLOCK_1;
-
-#endif
