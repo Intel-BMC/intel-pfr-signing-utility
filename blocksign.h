@@ -18,6 +18,7 @@
 #include "blocks.h"
 #define PAD_CPLD 0xff
 #define PAD_BLOCK 0x00
+#define PAD_HASH 0xff
 #define FILE_CHUNK_SIZE 1024
 #define SIG_READ_BUFFER 256
 #define ALIGN_TAG "_aligned"

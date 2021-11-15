@@ -893,12 +893,17 @@ int generateBlocks(ARGUMENTS *args)
         int sigLen = 0;
         unsigned char *r = NULL;
         unsigned char *s = NULL;
-        ret = HashFile(targetFile, Sha256, &hashBuffer, &size);
-        if (ret)
-        {
-            copy_memory(b0.sha256, sizeof(b0.sha256), hashBuffer, size);
-            free(hashBuffer);
-            hashBuffer = NULL;
+        if (args->b1_args.b0sig.hashalg == TPM_ALG_SHA256) {
+            ret = HashFile(targetFile, Sha256, &hashBuffer, &size);
+            if (ret)
+            {
+                copy_memory(b0.sha256, sizeof(b0.sha256), hashBuffer, size);
+                free(hashBuffer);
+                hashBuffer = NULL;
+            }
+        }
+        else {
+            memset(b0.sha256, PAD_HASH, sizeof(b0.sha256));
         }
         ret = HashFile(targetFile, Sha384, &hashBuffer, &size);
         if (ret)
