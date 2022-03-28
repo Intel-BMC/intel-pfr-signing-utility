@@ -736,6 +736,27 @@ int generateBlocks(ARGUMENTS *args)
                         pc_length += 4;
                     }
                 }
+                if (args->oemData != NULL)
+                {
+                    if (args->verbose)
+                    {
+                        printf("%sWriting OEM data to intermediate file.\n",
+                               getNfo());
+                    }
+                    writeChunkSize =
+                        fwrite(args->oemData, 1, OEM_DATA_SIZE, ifp);
+                    if (writeChunkSize != OEM_DATA_SIZE)
+                    {
+                        fprintf(stderr,
+                                "%sFailed to write to intermediate file\n",
+                                getErr());
+                        ret = 0;
+                    }
+                    else
+                    {
+                        pc_length += OEM_DATA_SIZE;
+                    }
+                }
                 // Perform Byteswap operation
                 if (args->swapbytes == 1)
                 {
@@ -793,18 +814,17 @@ int generateBlocks(ARGUMENTS *args)
                 }
                 writeChunkSize =
                     fwrite(chunk, sizeof(unsigned char), readChunkSize, ifp);
+                size_t bytesAdded = 0;
                 if (args->svn != UINT32_MAX)
                 {
-                    padamnt =
-                        (args->align) -
-                        ((readChunkSize + actualBlockPad + 4) % (args->align));
+                    bytesAdded += sizeof(uint32_t);
                 }
-                else
+                if (args->oemData)
                 {
-                    padamnt =
-                        (args->align) -
-                        ((readChunkSize + actualBlockPad) % (args->align));
+                    bytesAdded += OEM_DATA_SIZE;
                 }
+                padamnt = args->align -
+                    ((readChunkSize + actualBlockPad + bytesAdded) % args->align);
                 if (padamnt == (args->align))
                 {
                     padamnt = 0;

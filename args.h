@@ -58,6 +58,11 @@
 #define ELEMENT_CPLD "CPLD"
 #define ELEMENT_BYTESWAP "SWAPBYTES"
 #define ELEMENT_CPLDSVN "SVN"
+#define ELEMENT_CPLDOEMDATA "OEMDATA"
+
+#define OEM_DATA_SIZE 16
+#define OEM_HEX_MIN_LEN 3
+#define OEM_HEX_MAX_LEN 34
 
 // True False Tags
 #define TAG_TRUE "TRUE"
@@ -112,6 +117,7 @@ typedef struct _ARGUMENTS
 {
     uint8_t swapbytes;
     uint32_t svn;
+    uint8_t *oemData;
     uint8_t version;
     uint8_t verbose;
     uint8_t parse;

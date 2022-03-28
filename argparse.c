@@ -86,6 +86,7 @@ void initContext(ARGUMENTS **args)
     (*args)->version = UINT8_MAX;
     (*args)->swapbytes = UINT8_MAX;
     (*args)->svn = UINT32_MAX;
+    (*args)->oemData = NULL;
 }
 
 /// Destroy the argument context, ensuring all memory is freed
@@ -108,6 +109,10 @@ void destroyContext(ARGUMENTS *args)
         if (args->b1_args.cskey.sign_key != NULL)
         {
             free(args->b1_args.cskey.sign_key);
+        }
+        if (args->oemData)
+        {
+            free(args->oemData);
         }
         if (args->inputBinary != NULL)
         {
@@ -293,6 +298,67 @@ int setUint32Dec(uint32_t *set, const unsigned char *val, int line_num)
     {
         fprintf(stderr, "%sFailed to parse DEC value at line: %d. Check XML.\n",
                 getErr(), line_num);
+    }
+    return ret;
+}
+
+// validates a ascii hex input string and sets that
+// value into a binary hex buffer of max length set_size
+int setLongHexValue(uint8_t* set, size_t set_size, const char* val,
+                    int line_num)
+{
+    int i;
+    int ret = 1;
+    char* upper;
+    toUpper((const uint8_t *)val, &upper);
+    int length = strlen(upper);
+    // sanity check
+    for (i = 0; i < length && ret; ++i)
+    {
+        if (!(upper[i] == '0' || upper[i] == 'X' ||
+              (upper[i] >= 'A' && upper[i] <= 'F') ||
+              (upper[i] >= '0' && upper[i] <= '9')))
+        {
+            ret = 0;
+        }
+        if (upper[i] == 'X' && i != 1)
+        {
+            ret = 0;
+        }
+    }
+    free(upper);
+    if ((size_t)length > 2 * set_size)
+    {
+        fprintf(stderr, "HEX value too long at line: %d. Check XML.\n",
+                line_num);
+        ret = 0;
+    }
+    if (ret)
+    {
+        // starting from the tail, create a right-aligned value in the
+        // output buffer
+        uint8_t* out = set + set_size - 1;
+        for (i = length - 1; i >= 0; i -= 2)
+        {
+            char buf[3];
+            if (i >= 1)
+            {
+                buf[0] = val[i - 1];
+            }
+            else
+            {
+                buf[0] = '0';
+            }
+            buf[1] = val[i];
+            buf[2] = 0;
+            *out = (uint8_t)strtoul(buf, NULL, 16);
+            out--;
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Failed to parse HEX value at line: %d. Check XML.\n",
+                line_num);
     }
     return ret;
 }
@@ -1203,6 +1269,76 @@ int parseElements(xmlNode *node, ARGUMENTS *args)
                         stderr,
                         "%s%s was unexpected, line: %d. Check XML Syntax.\n",
                         getErr(), ELEMENT_CPLDSVN, cur_node->line);
+                    healthy = 0;
+                }
+            }
+
+            else if (checkBlock(cur_node, ELEMENT_CPLDOEMDATA))
+            {
+                if (checkBlock(cur_node->parent, ELEMENT_CPLD))
+                {
+                    if (args->oemData != NULL)
+                    {
+                        fprintf(stderr,
+                                "%sDuplicate %s element at line: %d. Check XML "
+                                "syntax.\n",
+                                getErr(), ELEMENT_CPLDOEMDATA, cur_node->line);
+                        healthy = 0;
+                    }
+                    else
+                    {
+                        const char *oemInput =
+                            (char *)(cur_node->children->content);
+                        tempLen = strlen(oemInput);
+                        // check for 0x... or not as an indication of ascii
+                        // or hex values; ascii can take up the whole 16 bytes
+                        // and hex will be parsed.
+                        if ((tempLen >= OEM_HEX_MIN_LEN &&
+                                tempLen <= OEM_HEX_MAX_LEN) &&
+                            oemInput[0] == '0' && oemInput[1] == 'x')
+                        {
+                            args->oemData = malloc((OEM_DATA_SIZE + 1) *
+                                    sizeof(char));
+                            clear_memory(args->oemData, OEM_DATA_SIZE + 1);
+                            // skip the 0x now that we know it is present
+                            oemInput += 2;
+                            healthy = setLongHexValue(args->oemData,
+                                    OEM_DATA_SIZE, oemInput, cur_node->line);
+                        }
+                        else if (tempLen > 0 && tempLen <= OEM_DATA_SIZE)
+                        {
+                            tempLen++;
+                            args->oemData = malloc((OEM_DATA_SIZE + 1) *
+                                    sizeof(char));
+                            clear_memory(args->oemData, OEM_DATA_SIZE + 1);
+                            copy_string(args->oemData, tempLen,
+                                    cur_node->children->content);
+                            healthy = 1;
+                        }
+                        else if (tempLen == 0)
+                        {
+                            // use all 0
+                            args->oemData = malloc((OEM_DATA_SIZE + 1) *
+                                    sizeof(char));
+                            clear_memory(args->oemData, OEM_DATA_SIZE + 1);
+                        }
+                        else
+                        {
+                            fprintf(stderr,
+                                    "%s%s element at line %d exceeds max "
+                                    "length of %d bytes.\n",
+                                    getErr(), ELEMENT_CPLDOEMDATA,
+                                    cur_node->line, OEM_DATA_SIZE);
+                            healthy = 0;
+                        }
+                    }
+                }
+                else
+                {
+                    fprintf(
+                        stderr,
+                        "%s%s was unexpected, line: %d. Check XML Syntax.\n",
+                        getErr(), ELEMENT_CPLDOEMDATA, cur_node->line);
                     healthy = 0;
                 }
             }

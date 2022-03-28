@@ -46,6 +46,15 @@ void copy_memory(void *const dest, const int destSize, const void *const src,
 #endif
 }
 
+void clear_memory(void *const dest, const int destSize)
+{
+#ifdef _WIN32
+    memset_s(dest, destSize, 0);
+#else
+    memset(dest, 0, destSize);
+#endif
+}
+
 void cat_string(void *dest, int len, const void *src)
 {
 #ifdef _WIN32
