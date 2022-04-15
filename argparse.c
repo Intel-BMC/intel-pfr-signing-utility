@@ -19,6 +19,7 @@
 #include <libxml/tree.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 #include "args.h"
 #include "log.h"
@@ -140,13 +141,11 @@ int checkBlock(xmlNode *node, const char *name)
     int ret = 0;
     if (node != NULL)
     {
-        char *upper;
-        toUpper(node->name, &upper);
-        if (strcmp(upper, name) == 0)
+        const char *node_name = (const char *)(node->name);
+        if (strcasecmp(node_name, name) == 0)
         {
             ret = 1;
         }
-        free(upper);
     }
     return ret;
 }
@@ -154,40 +153,41 @@ int checkBlock(xmlNode *node, const char *name)
 /// Validates input (32-bit hex), and sets a value (unsigned 32-bit integer)
 int setUint32Hex(uint32_t *set, const unsigned char *val, int line_num)
 {
-    int i;
     int ret = 1;
-    char *upper;
-    toUpper(val, &upper);
-    int length = strlen(upper);
-    // sanity check
-    for (i = 0; i < length && ret; ++i)
+    char *endptr = NULL;
+    *set = (uint32_t)strtoul((char *)val, &endptr, 16);
+    if (errno == ERANGE)
     {
-        if (!(upper[i] == '0' || upper[i] == 'X' ||
-              (upper[i] >= 'A' && upper[i] <= 'F') ||
-              (upper[i] >= '0' && upper[i] <= '9')))
-        {
-            ret = 0;
-        }
-        if (upper[i] == 'X' && i != 1)
-        {
-            ret = 0;
-        }
+        fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
+                line_num);
+        ret = 0;
     }
-    free(upper);
-    if (ret)
+    else if (errno == EINVAL || (endptr && *endptr))
     {
-        *set = (uint32_t)strtoul((char *)val, NULL, 16);
-        if (errno == ERANGE)
-        {
-            fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
-                    line_num);
-            ret = 0;
-        }
+        fprintf(stderr, "%s%s contains invalid chars. Line: %d\n",
+                getErr(), val, line_num);
+        ret = 0;
     }
-    else
+    return ret;
+}
+
+/// Validates input (32-bit decimal), and sets a value (size_t)
+int setSizeDec(size_t *set, const unsigned char *val, int line_num)
+{
+    int ret = 1;
+    char *endptr = NULL;
+    *set = (size_t)strtoul((char *)val, &endptr, 10);
+    if (errno == ERANGE)
     {
-        fprintf(stderr, "%sFailed to parse HEX value at line: %d. Check XML.\n",
-                getErr(), line_num);
+        fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
+                line_num);
+        ret = 0;
+    }
+    else if (errno == EINVAL || (endptr && *endptr))
+    {
+        fprintf(stderr, "%s%s contains invalid chars. Line: %d\n",
+                getErr(), val, line_num);
+        ret = 0;
     }
     return ret;
 }
@@ -196,74 +196,44 @@ int setUint32Hex(uint32_t *set, const unsigned char *val, int line_num)
 /// integer)
 int setInt32Dec(int32_t *set, const unsigned char *val, int line_num)
 {
-    int i;
     int ret = 1;
-
-    int length = strlen((char *)val);
-    // sanity check
-    for (i = 0; i < length && ret; ++i)
+    char *endptr = NULL;
+    *set = (int32_t)strtol((char *)val, &endptr, 10);
+    if (errno == ERANGE)
     {
-        if (!(val[i] == '-' || (val[i] >= '0' && val[i] <= '9')))
-        {
-            ret = 0;
-        }
+        fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
+                line_num);
+        ret = 0;
     }
-    if (ret)
+    else if (errno == EINVAL || (endptr && *endptr))
     {
-        *set = (int32_t)strtol((char *)val, NULL, 10);
-        if (errno == ERANGE)
-        {
-            fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
-                    line_num);
-            ret = 0;
-        }
-    }
-    else
-    {
-        fprintf(stderr, "%sFailed to parse DEC value at line: %d. Check XML.\n",
-                getErr(), line_num);
+        fprintf(stderr, "%s%s contains invalid chars. Line: %d\n",
+                getErr(), val, line_num);
+        ret = 0;
     }
     return ret;
 }
 
 int setUint8Dec(uint8_t *set, const unsigned char *val, int line_num)
 {
-    int i;
     int ret = 1;
-
-    int length = strlen((char *)val);
-    // sanity check
-    for (i = 0; i < length && ret; ++i)
+    char *endptr = NULL;
+    uint32_t test = (uint32_t)strtoul((char *)val, &endptr, 10);
+    if (errno == ERANGE || test > 255)
     {
-        if (!(val[i] == '-' || (val[i] >= '0' && val[i] <= '9')))
-        {
-            ret = 0;
-        }
+        fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
+                line_num);
+        ret = 0;
     }
-    if (ret)
+    else if (errno == EINVAL || (endptr && *endptr))
     {
-        uint32_t test = (uint32_t)strtoul((char *)val, NULL, 10);
-        if (errno == ERANGE)
-        {
-            fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
-                    line_num);
-            ret = 0;
-        }
-        else if (test > 255)
-        {
-            fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
-                    line_num);
-            ret = 0;
-        }
-        else
-        {
-            *set = (uint8_t)test;
-        }
+        fprintf(stderr, "%s%s contains invalid chars. Line: %d\n",
+                getErr(), val, line_num);
+        ret = 0;
     }
     else
     {
-        fprintf(stderr, "%sFailed to parse DEC value at line: %d. Check XML.\n",
-                getErr(), line_num);
+        *set = (uint8_t)test;
     }
     return ret;
 }
@@ -272,32 +242,20 @@ int setUint8Dec(uint8_t *set, const unsigned char *val, int line_num)
 /// (unsigned 32-bit integer)
 int setUint32Dec(uint32_t *set, const unsigned char *val, int line_num)
 {
-    int i;
     int ret = 1;
-
-    int length = strlen((char *)val);
-    // sanity check
-    for (i = 0; i < length && ret; ++i)
+    char *endptr = NULL;
+    *set = (uint32_t)strtoul((char *)val, &endptr, 10);
+    if (errno == ERANGE)
     {
-        if (!(val[i] == '-' || (val[i] >= '0' && val[i] <= '9')))
-        {
-            ret = 0;
-        }
+        fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
+                line_num);
+        ret = 0;
     }
-    if (ret)
+    else if (errno == EINVAL || (endptr && *endptr))
     {
-        *set = (uint32_t)strtoul((char *)val, NULL, 10);
-        if (errno == ERANGE)
-        {
-            fprintf(stderr, "%s%s is too large. Line: %d\n", getErr(), val,
-                    line_num);
-            ret = 0;
-        }
-    }
-    else
-    {
-        fprintf(stderr, "%sFailed to parse DEC value at line: %d. Check XML.\n",
-                getErr(), line_num);
+        fprintf(stderr, "%s%s contains invalid chars. Line: %d\n",
+                getErr(), val, line_num);
+        ret = 0;
     }
     return ret;
 }
@@ -307,26 +265,9 @@ int setUint32Dec(uint32_t *set, const unsigned char *val, int line_num)
 int setLongHexValue(uint8_t* set, size_t set_size, const char* val,
                     int line_num)
 {
-    int i;
     int ret = 1;
-    char* upper;
-    toUpper((const uint8_t *)val, &upper);
-    int length = strlen(upper);
-    // sanity check
-    for (i = 0; i < length && ret; ++i)
-    {
-        if (!(upper[i] == '0' || upper[i] == 'X' ||
-              (upper[i] >= 'A' && upper[i] <= 'F') ||
-              (upper[i] >= '0' && upper[i] <= '9')))
-        {
-            ret = 0;
-        }
-        if (upper[i] == 'X' && i != 1)
-        {
-            ret = 0;
-        }
-    }
-    free(upper);
+    int length = strlen((const char *)val);
+
     if ((size_t)length > 2 * set_size)
     {
         fprintf(stderr, "HEX value too long at line: %d. Check XML.\n",
@@ -338,7 +279,7 @@ int setLongHexValue(uint8_t* set, size_t set_size, const char* val,
         // starting from the tail, create a right-aligned value in the
         // output buffer
         uint8_t* out = set + set_size - 1;
-        for (i = length - 1; i >= 0; i -= 2)
+        for (int i = length - 1; i >= 0; i -= 2)
         {
             char buf[3];
             if (i >= 1)
@@ -351,7 +292,15 @@ int setLongHexValue(uint8_t* set, size_t set_size, const char* val,
             }
             buf[1] = val[i];
             buf[2] = 0;
-            *out = (uint8_t)strtoul(buf, NULL, 16);
+            char *endptr = NULL;
+            *out = (uint8_t)strtoul(buf, &endptr, 16);
+            if (errno == EINVAL || (endptr && *endptr))
+            {
+                fprintf(stderr, "Invalid HEX value at line: %d. Check XML.\n",
+                        line_num);
+                ret = 0;
+                break;
+            }
             out--;
         }
     }
@@ -367,21 +316,20 @@ int setLongHexValue(uint8_t* set, size_t set_size, const char* val,
 int setHashAlg(uint16_t *set, const unsigned char *val, int line_num)
 {
     int ret = 1;
-    char *upper;
-    toUpper(val, &upper);
-    if (strcmp(upper, HASH_SHA1_STR) == 0)
+    const char *hash = (const char *)val;
+    if (strcasecmp(hash, HASH_SHA1_STR) == 0)
     {
         *set = TPM_ALG_SHA1;
     }
-    else if (strcmp(upper, HASH_SHA256_STR) == 0)
+    else if (strcasecmp(hash, HASH_SHA256_STR) == 0)
     {
         *set = TPM_ALG_SHA256;
     }
-    else if (strcmp(upper, HASH_SHA384_STR) == 0)
+    else if (strcasecmp(hash, HASH_SHA384_STR) == 0)
     {
         *set = TPM_ALG_SHA384;
     }
-    else if (strcmp(upper, HASH_SHA512_STR) == 0)
+    else if (strcasecmp(hash, HASH_SHA512_STR) == 0)
     {
         *set = TPM_ALG_SHA512;
     }
@@ -393,7 +341,6 @@ int setHashAlg(uint16_t *set, const unsigned char *val, int line_num)
             getErr(), val, line_num);
         ret = 0;
     }
-    free(upper);
     return ret;
 }
 
@@ -401,13 +348,12 @@ int setHashAlg(uint16_t *set, const unsigned char *val, int line_num)
 int setTrueFalse(uint8_t *set, const unsigned char *val, int line_num)
 {
     int ret = 1;
-    char *upper;
-    toUpper(val, &upper);
-    if (strcmp(upper, TAG_TRUE) == 0)
+    const char *v = (const char *)val;
+    if (strcasecmp(v, TAG_TRUE) == 0)
     {
         *set = 1;
     }
-    else if (strcmp(upper, TAG_FALSE) == 0)
+    else if (strcasecmp(v, TAG_FALSE) == 0)
     {
         *set = 0;
     }
@@ -420,7 +366,6 @@ int setTrueFalse(uint8_t *set, const unsigned char *val, int line_num)
         ret = 0;
     }
 
-    free(upper);
     return ret;
 }
 
@@ -1145,7 +1090,7 @@ int parseElements(xmlNode *node, ARGUMENTS *args)
                     }
                     else
                     {
-                        healthy = setUint32Dec(&(args->align),
+                        healthy = setSizeDec(&(args->align),
                                                cur_node->children->content,
                                                cur_node->line);
                     }

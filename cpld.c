@@ -21,14 +21,14 @@
 #include "log.h"
 void swapBits(uint8_t *in)
 {
-    uint8_t out = (*in & 0b1) << 7;
-    out += (*in & 0b10) << 5;
-    out += (*in & 0b100) << 3;
-    out += (*in & 0b1000) << 1;
-    out += (*in & 0b10000) >> 1;
-    out += (*in & 0b100000) >> 3;
-    out += (*in & 0b1000000) >> 5;
-    out += (*in & 0b10000000) >> 7;
+    uint8_t out = (*in & 0x01) << 7;
+    out += (*in & 0x02) << 5;
+    out += (*in & 0x04) << 3;
+    out += (*in & 0x08) << 1;
+    out += (*in & 0x10) >> 1;
+    out += (*in & 0x20) >> 3;
+    out += (*in & 0x40) >> 5;
+    out += (*in & 0x80) >> 7;
     *in = out;
 }
 int swapBytesAndBits(const uint8_t *in, uint8_t *out)

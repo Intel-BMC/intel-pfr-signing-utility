@@ -680,9 +680,9 @@ int generateBlocks(ARGUMENTS *args)
     uint32_t actualBlockPad = 0;
     int readChunkSize = 0;
     int writeChunkSize = 0;
-    int padamnt = 0;
+    size_t padamnt = 0;
     int i;
-    char chunk[FILE_CHUNK_SIZE];
+    uint8_t chunk[FILE_CHUNK_SIZE];
     int ret = 1;
     char *intermediateFile = NULL;
     FILE *fp = NULL;
@@ -831,7 +831,7 @@ int generateBlocks(ARGUMENTS *args)
                 }
                 pc_length += writeChunkSize + padamnt;
                 chunk[0] = PAD_CPLD;
-                for (i = 0; i < padamnt && ret; ++i)
+                for (size_t sz = 0; sz < padamnt && ret; ++sz)
                 {
                     writeChunkSize =
                         fwrite(chunk, sizeof(unsigned char), 1, ifp);

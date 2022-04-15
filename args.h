@@ -15,6 +15,7 @@
 */
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 #define EXPECT_VERSION 1
 
 #define CANCELLATION_BIT 0x100
@@ -121,7 +122,7 @@ typedef struct _ARGUMENTS
     uint8_t version;
     uint8_t verbose;
     uint8_t parse;
-    uint32_t align;
+    size_t align;
     uint32_t blockpad;
     char *inputBinary;
     char *outputBinary;

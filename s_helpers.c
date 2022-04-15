@@ -32,6 +32,7 @@ void copy_n_string(void *dest, int len, const void *src, int count)
 #ifdef _WIN32
     strncpy_s(dest, len, src, count);
 #else
+    count = (count < len ? count : len);
     strncpy(dest, src, count);
 #endif
 }
@@ -42,7 +43,8 @@ void copy_memory(void *const dest, const int destSize, const void *const src,
 #ifdef _WIN32
     memcpy_s(dest, destSize, src, srcSize);
 #else
-    memcpy(dest, src, srcSize);
+    size_t n = (srcSize < destSize ? srcSize : destSize);
+    memcpy(dest, src, n);
 #endif
 }
 

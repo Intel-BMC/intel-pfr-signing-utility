@@ -21,6 +21,15 @@ find_package(OpenSSL REQUIRED)
 #PKG_SEARCH_MODULE(LIBCRYPTO REQUIRED libcrypto openssl)
 PKG_CHECK_MODULES(LIBXML2 libxml-2.0 REQUIRED)
 #find_package(libxml2 REQUIRED)
+
+if (MSVC)
+	# level 4 warning and all warnings as errors
+	add_compile_options(/W4 /WX)
+else ()
+	add_compile_options(-Wall -Wextra -pedantic -Werror)
+endif ()
+
+add_compile_options(-g)
 include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(${LIBXML2_INCLUDE_DIRS})
 add_executable(intel-pfr-signing-utility argparse.c cpld.c blocksign.c sslhelper.c main.c s_helpers.c log.c)
