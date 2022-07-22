@@ -326,33 +326,60 @@ int parseBlocks(ARGUMENTS *args)
                 hexDump(b0.sha256, 32, "  ", stdout, getNfo());
                 printf("%s\n", getNfo());
 
-                // Calculate hash sha256
-                HashFilePointer(fp, Sha256, &hash, &hashLen);
-                printf("%sPC Calculated SHA256:\n", getNfo());
-                hexDump(hash, hashLen, "  ", stdout, getNfo());
-                printf("%s\n", getNfo());
-                fseek(fp, pos, SEEK_SET);
-                for (i = 0; i < 32 && i < hashLen; ++i)
+                if (args->b1_args.b0sig.hashalg == TPM_ALG_SHA256)
                 {
-                    if (hash[i] != b0.sha256[i])
+                    // Calculate hash sha256
+                    HashFilePointer(fp, Sha256, &hash, &hashLen);
+                    printf("%sPC Calculated SHA256:\n", getNfo());
+                    hexDump(hash, hashLen, "  ", stdout, getNfo());
+                    printf("%s\n", getNfo());
+                    fseek(fp, pos, SEEK_SET);
+                    for (i = 0; i < 32 && i < hashLen; ++i)
                     {
-                        fprintf(stderr,
-                                "%s%s%s  *** Block 0 SHA256 does not match "
-                                "calculated value ***%s\n",
-                                getErr(), setAttribute(Bold), setAttribute(Red),
-                                setAttribute(Clear));
-                        i = 255;
+                        if (hash[i] != b0.sha256[i])
+                        {
+                            fprintf(stderr,
+                                    "%s%s%s  *** Block 0 SHA256 does not match "
+                                    "calculated value ***%s\n",
+                                    getErr(), setAttribute(Bold), setAttribute(Red),
+                                    setAttribute(Clear));
+                            i = 255;
+                        }
                     }
-                }
 
-                if (i == hashLen)
-                {
-                    printf("%s%s%s*** Block 0 SHA256 matches calculated value "
-                           "***%s\n",
-                           getNfo(), setAttribute(Bold), setAttribute(Green),
-                           setAttribute(Clear));
+                    if (i == hashLen)
+                    {
+                        printf("%s%s%s*** Block 0 SHA256 matches calculated value "
+                               "***%s\n",
+                               getNfo(), setAttribute(Bold), setAttribute(Green),
+                               setAttribute(Clear));
+                    }
+                    printf("%s\n", getNfo());
                 }
-                printf("%s\n", getNfo());
+                else
+                {
+                    for (i = 0; i < 32; ++i)
+                    {
+                        if (PAD_HASH != b0.sha256[i])
+                        {
+                            fprintf(stderr,
+                                    "%s%s%s  *** Block 0 SHA256 does not match "
+                                    "pad hash ***%s\n",
+                                    getErr(), setAttribute(Bold), setAttribute(Red),
+                                    setAttribute(Clear));
+                            i = 255;
+                        }
+                    }
+
+                    if (i == 32)
+                    {
+                        printf("%s%s%s*** Block 0 SHA256 matches pad hash "
+                               "***%s\n",
+                               getNfo(), setAttribute(Bold), setAttribute(Green),
+                               setAttribute(Clear));
+                    }
+                    printf("%s\n", getNfo());
+                }
                 if (hash != NULL)
                 {
                     free(hash);
