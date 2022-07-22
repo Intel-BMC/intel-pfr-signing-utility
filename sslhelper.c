@@ -181,7 +181,11 @@ int ExtractQxQyFromPubkey(const char *file, unsigned char **qx,
     int i, j;
     unsigned char *pub;
     int publen;
+#if (OPENSSL_VERSION_NUMBER < 0x30000000L)
     EC_KEY *eckey = NULL;
+#else
+    EVP_PKEY *eckey = NULL;
+#endif
     // check for any NULLs
     if (file == NULL)
     {
@@ -196,6 +200,7 @@ int ExtractQxQyFromPubkey(const char *file, unsigned char **qx,
             fprintf(stderr, "%sFailed to read eckey %s.\n", getErr(), file);
             ret = 0;
         }
+#if (OPENSSL_VERSION_NUMBER < 0x30000000L)
         if (ret)
         {
             eckey = PEM_read_bio_EC_PUBKEY(in, NULL, NULL, NULL);
@@ -209,6 +214,21 @@ int ExtractQxQyFromPubkey(const char *file, unsigned char **qx,
         {
             publen =
                 EC_KEY_key2buf(eckey, EC_KEY_get_conv_form(eckey), &pub, NULL);
+#else
+        if (ret)
+        {
+            eckey = PEM_read_bio_PUBKEY(in, NULL, NULL, NULL);
+        }
+        if (eckey == NULL && ret)
+        {
+            fprintf(stderr, "%sFailed to read eckey %s.\n", getErr(), file);
+            ret = 0;
+        }
+        if (ret)
+        {
+            publen =
+                EVP_PKEY_get1_encoded_public_key(eckey, &pub);
+#endif
             if (pub[0] != 0x04)
             {
                 // key is compressed, we don't support this
