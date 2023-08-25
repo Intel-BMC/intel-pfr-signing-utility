@@ -34,8 +34,8 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r,
 {
     int ret = 1;
     int i, j;
-    uint8_t skipR = 0;
-    uint8_t skipS = 0;
+    int8_t skipR = 0;
+    int8_t skipS = 0;
     // currently we will extract up to 384 curve, expand later
     if (sigLen < 70 || sig == NULL)
     {
@@ -47,29 +47,17 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r,
     // figure out point length and if we need to skip a byte
     if (ret)
     {
-        if (sig[3] == 0x20 || sig[3] == 0x21)
+        if (sig[3] == 0x1f || sig[3] == 0x20 || sig[3] == 0x21)
         {
-            if (sig[3] == 0x21)
-            {
-                skipR = 0x01;
-            }
-            if (sig[3 + sig[3] + 2] == 0x21)
-            {
-                skipS = 0x01;
-            }
             *len = 0x20;
+            skipR = sig[3] - *len;
+            skipS = sig[3 + sig[3] + 2] - *len;
         }
-        else if (sig[3] == 0x30 || sig[3] == 0x31)
+        else if (sig[3] ==0x2f || sig[3] == 0x30 || sig[3] == 0x31)
         {
-            if (sig[3] == 0x31)
-            {
-                skipR = 0x01;
-            }
-            if (sig[3 + sig[3] + 2] == 0x31)
-            {
-                skipS = 0x01;
-            }
             *len = 0x30;
+            skipR = sig[3] - *len;
+            skipS = sig[3 + sig[3] + 2] - *len;
         }
         else if (sig[3] == 0x41 || sig[3] == 0x42)
         {
@@ -107,12 +95,27 @@ int ExtractRs(const unsigned char *sig, const int sigLen, unsigned char **r,
     else
     {
         *r = malloc(*len * sizeof(unsigned char));
-        for (i = 4 + skipR, j = 0; j < *len && i < sigLen; ++i, ++j)
+
+        j = 0;
+        if (skipR < 0) {
+            skipR = 0;
+            (*r)[j++] = 0;
+        }
+
+        for (i = 4 + skipR; j < *len && i < sigLen; ++i, ++j)
         {
             (*r)[j] = sig[i];
         }
+
         *s = malloc(*len * sizeof(unsigned char));
-        for (i += 2 + skipS, j = 0; j < *len && i < sigLen; ++i, ++j)
+
+        j = 0;
+        if (skipS < 0) {
+            skipS = 0;
+            (*s)[j++] = 0;
+        }
+
+        for (i += 2 + skipS; j < *len && i < sigLen; ++i, ++j)
         {
             (*s)[j] = sig[i];
         }
